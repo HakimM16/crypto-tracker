@@ -1,22 +1,25 @@
-import React, { useState, useEffect } from 'react'
-import { Search, TrendingUp, Settings } from 'lucide-react'
-import { Card, CardContent } from './ui/card'
-import { Input } from './ui/input'
-import { AreaChart, Area, YAxis, XAxis, ResponsiveContainer, Tooltip } from 'recharts'
-import axios from 'axios'
+import React, { useState, useEffect } from 'react';
+import { Search, TrendingUp, Settings } from 'lucide-react';
+import { Card, CardContent } from './ui/card';
+import { Input } from './ui/input';
+import { AreaChart, Area, YAxis, XAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import axios from 'axios';
 
 const CryptoTracker = () => {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [cryptos, setCryptos] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [priceHistory, setPriceHistory] = useState({})
+  const API_KEY = 'CG-1Q7Dwwf8d8ofd74kHHKaqXY9'; // Replace with your actual API key
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [cryptos, setCryptos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [priceHistory, setPriceHistory] = useState({});
 
   // Fetch main crypto data
   useEffect(() => {
     const fetchCryptoData = async () => {
       try {
-        setLoading(true)
+        setLoading(true);
+
         const response = await axios.get(
           'https://api.coingecko.com/api/v3/coins/markets',
           {
@@ -25,55 +28,65 @@ const CryptoTracker = () => {
               order: 'market_cap_desc',
               per_page: 20,
               page: 1,
-              sparkline: false
-            }
+              sparkline: false,
+            },
+            headers: {
+              'Authorization': `Bearer ${API_KEY}`, // Including the API key in the headers
+            },
           }
-        )
-        setCryptos(response.data)
-        
+        );
+
+        setCryptos(response.data);
+
         // Fetch price history for each crypto
-        const historyPromises = response.data.map(crypto =>
-          axios.get(`https://api.coingecko.com/api/v3/coins/${crypto.id}/market_chart`, {
-            params: {
-              vs_currency: 'gbp',
-              days: 7,
-              interval: 'daily'
+        const historyPromises = response.data.map((crypto) =>
+          axios.get(
+            `https://api.coingecko.com/api/v3/coins/${crypto.id}/market_chart`,
+            {
+              params: {
+                vs_currency: 'gbp',
+                days: 7,
+                interval: 'daily',
+              },
+              headers: {
+                'Authorization': `Bearer ${API_KEY}`, // Including the API key in the headers
+              },
             }
-          })
-        )
-        
-        const histories = await Promise.all(historyPromises)
-        const historyData = {}
-        
+          )
+        );
+
+        const histories = await Promise.all(historyPromises);
+        const historyData = {};
+
         histories.forEach((history, index) => {
-          const cryptoId = response.data[index].id
-          historyData[cryptoId] = history.data.prices.map(price => ({
+          const cryptoId = response.data[index].id;
+          historyData[cryptoId] = history.data.prices.map((price) => ({
             date: new Date(price[0]).toLocaleDateString(),
-            price: price[1]
-          }))
-        })
-        
-        setPriceHistory(historyData)
+            price: price[1],
+          }));
+        });
+
+        setPriceHistory(historyData);
       } catch (err) {
-        setError('Failed to fetch cryptocurrency data')
-        console.error('Error:', err)
+        setError('Failed to fetch cryptocurrency data');
+        console.error('Error:', err);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchCryptoData()
-    const interval = setInterval(fetchCryptoData, 60000)
-    return () => clearInterval(interval)
-  }, [])
+    fetchCryptoData();
+    const interval = setInterval(fetchCryptoData, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const filteredCryptos = cryptos.filter(crypto =>
+  const filteredCryptos = cryptos.filter((crypto) =>
     crypto.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     crypto.symbol.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  );
 
   if (error) {
-    return <div className="text-center text-red-500 mt-10">{error}</div>
+    return <div className="text-center text-red-500 mt-10">{error}</div>;
   }
 
   return (
@@ -120,9 +133,9 @@ const CryptoTracker = () => {
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center">
-                      <img 
-                        src={crypto.image} 
-                        alt={crypto.name} 
+                      <img
+                        src={crypto.image}
+                        alt={crypto.name}
                         className="w-8 h-8 mr-2"
                       />
                       <div>
@@ -134,10 +147,10 @@ const CryptoTracker = () => {
                         </p>
                       </div>
                     </div>
-                    <span 
+                    <span
                       className={`text-sm font-medium ${
-                        crypto.price_change_percentage_24h > 0 
-                          ? 'text-green-600' 
+                        crypto.price_change_percentage_24h > 0
+                          ? 'text-green-600'
                           : 'text-red-600'
                       }`}
                     >
@@ -150,37 +163,39 @@ const CryptoTracker = () => {
                   <div className="mt-2 text-sm text-gray-500">
                     Market Cap: £{crypto.market_cap.toLocaleString()}
                   </div>
-                  
+
                   {/* Price Chart */}
                   <div className="h-40 mt-4">
                     {priceHistory[crypto.id] && (
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={priceHistory[crypto.id]}>
                           <defs>
-                            <linearGradient id={`gradient-${crypto.id}`} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                              <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                            <linearGradient
+                              id={`gradient-${crypto.id}`}
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+                              <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
                             </linearGradient>
                           </defs>
-                          <XAxis 
-                            dataKey="date" 
-                            hide={true}
-                          />
-                          <YAxis 
-                            hide={true}
-                            domain={['dataMin', 'dataMax']}
-                          />
+                          <XAxis dataKey="date" hide={true} />
+                          <YAxis hide={true} domain={['dataMin', 'dataMax']} />
                           <Tooltip
                             content={({ active, payload }) => {
                               if (active && payload && payload.length) {
                                 return (
                                   <div className="bg-white p-2 rounded shadow">
                                     <p className="text-sm">£{payload[0].value.toFixed(2)}</p>
-                                    <p className="text-xs text-gray-500">{payload[0].payload.date}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {payload[0].payload.date}
+                                    </p>
                                   </div>
-                                )
+                                );
                               }
-                              return null
+                              return null;
                             }}
                           />
                           <Area
@@ -200,7 +215,7 @@ const CryptoTracker = () => {
         </div>
       </main>
     </div>
-  )
-}
+  );
+};
 
-export default CryptoTracker
+export default CryptoTracker;
